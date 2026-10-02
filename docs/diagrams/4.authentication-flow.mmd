@@ -1,0 +1,36 @@
+sequenceDiagram
+    autonumber
+    participant U as User
+    participant R as React App
+    participant F as FastAPI
+    participant A as AuthService
+    participant DB as PostgreSQL
+
+    U->>R: Email + password
+    R->>F: POST /api/auth/login
+    F->>A: authenticate(email, password)
+    A->>DB: SELECT user WHERE email = ?
+    DB-->>A: User record
+    A->>A: bcrypt.checkpw(password, hash)
+
+    alt Valid credentials
+        A->>A: check role == PASSENGER
+        A-->>F: AuthenticationResult
+        F->>F: create_access_token(user_id, role)
+        F-->>R: 200 {access_token, user}
+        R->>R: localStorage.setItem('token', ...)
+        R-->>U: Redirect to dashboard
+    else Invalid credentials
+        A-->>F: raise AuthenticationError
+        F-->>R: 401 {detail: "Invalid credentials"}
+        R-->>U: Show error
+    end
+
+    Note over R,F: All subsequent requests:<br/>Authorization: Bearer <token>
+
+    R->>F: GET /api/bookings/my (with token)
+    F->>F: decode_access_token()
+    F->>DB: SELECT user WHERE id = ?
+    DB-->>F: User
+    F->>F: require_passenger_profile()
+    F-->>R: 200 {bookings}

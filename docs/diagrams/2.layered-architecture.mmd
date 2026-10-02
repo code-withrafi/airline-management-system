@@ -1,0 +1,26 @@
+flowchart TB
+    subgraph Presentation["Presentation Layer"]
+        A1["PySide GUI<br/>app/gui/*"]
+        A2["FastAPI Routers<br/>api/routers/*"]
+    end
+
+    subgraph App["Application Layer"]
+        B1["Services<br/>app/services/*"]
+        B2["Validators<br/>app/validators/*"]
+    end
+
+    subgraph Data["Data Layer"]
+        C1["Repositories<br/>app/repositories/*"]
+        C2["SQLAlchemy Models<br/>app/models/*"]
+    end
+
+    subgraph Storage["Storage"]
+        D1[("PostgreSQL")]
+    end
+
+    A1 --> B1
+    A2 --> B1
+    B1 --> B2
+    B1 --> C1
+    C1 --> C2
+    C2 --> D1

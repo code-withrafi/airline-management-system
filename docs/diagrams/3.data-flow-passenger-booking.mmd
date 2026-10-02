@@ -1,0 +1,43 @@
+sequenceDiagram
+    autonumber
+    participant U as User (Browser)
+    participant R as React App
+    participant F as FastAPI
+    participant S as BookingService
+    participant Repo as Repositories
+    participant DB as PostgreSQL
+
+    U->>R: Click "Book this flight"
+    R->>R: Navigate to /booking/:id
+    R->>F: GET /api/flights/:id/seats
+    F->>S: seat_service.get_aircraft_seats()
+    S->>Repo: seat_repo.get_by_aircraft()
+    Repo->>DB: SELECT * FROM seats WHERE aircraft_id = ?
+    DB-->>Repo: rows
+    Repo-->>S: Seat objects
+    S-->>F: seats + availability + prices
+    F-->>R: JSON response
+    R-->>U: Show seat map
+
+    U->>R: Pick seat + Continue
+    R->>F: POST /api/bookings {flight_id, seat_id}
+    F->>S: booking_service.create_booking()
+    S->>Repo: validate passenger, flight, seat
+    S->>Repo: check seat availability
+    S->>Repo: create booking (status=UNPAID)
+    Repo->>DB: INSERT INTO bookings ...
+    DB-->>Repo: booking id
+    Repo-->>S: Booking object
+    S-->>F: Booking
+    F-->>R: 201 Created {booking}
+    R-->>U: Redirect to /payment/:bookingId
+
+    U->>R: Submit payment
+    R->>F: POST /api/payments {booking_id, card...}
+    F->>S: payment_service.process_payment()
+    S-->>F: PaymentResult(success=true)
+    F->>S: booking_service.mark_as_paid()
+    S->>Repo: update booking.status = CONFIRMED
+    Repo->>DB: UPDATE bookings SET status = 'CONFIRMED'
+    F-->>R: 200 OK {success, transaction_id}
+    R-->>U: Redirect to /confirmation/:bookingId

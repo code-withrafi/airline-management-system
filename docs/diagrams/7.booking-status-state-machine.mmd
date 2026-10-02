@@ -1,0 +1,13 @@
+stateDiagram-v2
+    [*] --> UNPAID : Passenger creates booking
+    UNPAID --> CONFIRMED : Payment succeeds
+    UNPAID --> CANCELLED : Passenger cancels / timeout
+    CONFIRMED --> CHECKED_IN : Staff checks in
+    CONFIRMED --> CANCELLED : Passenger cancels
+    CONFIRMED --> REFUND_REQUESTED : Passenger requests refund
+    REFUND_REQUESTED --> REFUNDED : Admin approves
+    REFUND_REQUESTED --> CONFIRMED : Admin rejects
+    CHECKED_IN --> COMPLETED : Flight lands
+    CANCELLED --> [*]
+    REFUNDED --> [*]
+    COMPLETED --> [*]

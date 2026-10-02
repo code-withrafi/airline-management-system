@@ -1,0 +1,28 @@
+sequenceDiagram
+    autonumber
+    participant P as Passenger (Web)
+    participant F as FastAPI
+    participant DB as PostgreSQL
+    participant A as Admin (Desktop)
+
+    P->>F: POST /api/bookings/:id/refund
+    F->>DB: Check booking status = CONFIRMED
+    F->>DB: UPDATE status = REFUND_REQUESTED
+    F-->>P: 200 {status: REFUND_REQUESTED}
+
+    Note over DB: Booking awaits admin review
+
+    A->>DB: Admin opens refund queue
+    DB-->>A: List of REFUND_REQUESTED bookings
+    A->>A: Review + approve
+
+    alt Refund approved
+        A->>DB: UPDATE status = REFUNDED, refund_amount = X
+    else Refund rejected
+        A->>DB: UPDATE status = CONFIRMED
+    end
+
+    P->>F: GET /api/bookings/my
+    F->>DB: Query
+    DB-->>F: Updated booking
+    F-->>P: Show new status

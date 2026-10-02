@@ -1,0 +1,18 @@
+flowchart LR
+    subgraph Users["Users"]
+        U1[Passenger]
+        U2[Admin]
+    end
+
+    subgraph Cloud["Cloud"]
+        CDN["Static CDN<br/>(Vercel)"]
+        API["FastAPI<br/>(Railway / Fly)"]
+        DBS[("Managed PostgreSQL<br/>(Neon / RDS)")]
+    end
+
+    U1 -->|HTTPS| CDN
+    U1 -->|HTTPS| API
+    U2 -->|SSH / VPN| Desktop["Desktop App<br/>(internal)"]
+    CDN -->|API calls| API
+    API --> DBS
+    Desktop -->|Direct SQL| DBS

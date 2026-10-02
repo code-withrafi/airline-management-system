@@ -1,0 +1,24 @@
+flowchart TB
+    subgraph Clients["Client Applications"]
+        direction LR
+        Desktop["PySide6 Desktop<br/>(Admin + Staff)"]
+        Web["React Web App<br/>(Passengers)"]
+    end
+
+    subgraph Backend["Backend Layer"]
+        direction TB
+        FastAPI["FastAPI<br/>(REST API)"]
+        Services["Service Layer<br/>(Business Logic)"]
+        Repos["Repository Layer<br/>(Data Access)"]
+    end
+
+    subgraph Data["Data Layer"]
+        PG[("PostgreSQL<br/>Database")]
+    end
+
+    Desktop -->|SQLAlchemy ORM| Services
+    Web -->|"REST / JWT"| FastAPI
+    FastAPI --> Services
+    Services --> Repos
+    Repos --> PG
+    Desktop -.->|"also via ORM"| PG
