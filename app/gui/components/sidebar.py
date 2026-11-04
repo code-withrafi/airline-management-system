@@ -1,3 +1,4 @@
+# app/gui/components/sidebar.py
 from PySide6.QtCore import Qt, Signal
 from PySide6.QtWidgets import (
     QFrame,
@@ -136,6 +137,10 @@ class Sidebar(QFrame):
             "flights",
         )
 
+        self.schedule_button = self.create_nav_button(
+            "🤖   Schedule",
+            "schedule",
+        )
 
         self.crew_button = self.create_nav_button(
             "Crew Assignment",
@@ -191,6 +196,11 @@ class Sidebar(QFrame):
             )
         )
 
+        self.schedule_button.clicked.connect(
+            lambda: self.navigation_requested.emit(
+                "schedule"
+            )
+        )
 
         self.crew_button.clicked.connect(
             lambda: self.navigation_requested.emit(
@@ -239,6 +249,10 @@ class Sidebar(QFrame):
 
         layout.addWidget(
             self.flights_button
+        )
+
+        layout.addWidget(
+            self.schedule_button
         )
 
         layout.addWidget(

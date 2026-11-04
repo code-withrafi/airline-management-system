@@ -1,3 +1,4 @@
+# app/gui/admin/admin_window.py
 from PySide6.QtCore import Qt, Signal
 from PySide6.QtWidgets import (
     QDialog,
@@ -33,6 +34,9 @@ from app.gui.components import (
 )
 from app.gui.admin.flight_management import (
     FlightManagementPage,
+)
+from app.gui.admin.schedule_generator import (
+    ScheduleGeneratorPage,
 )
 from app.gui.admin.crew_assignment_page import (
     CrewAssignmentPage,
@@ -192,6 +196,15 @@ class AdminWindow(QWidget):
         )
         self.pages["flights"] = flight_page
         self.stack.addWidget(flight_page)
+
+        schedule_page = ScheduleGeneratorPage(
+            self._get_flight_session()
+        )
+        schedule_page.generation_completed.connect(
+            self._on_schedule_generated
+        )
+        self.pages["schedule"] = schedule_page
+        self.stack.addWidget(schedule_page)
 
         crew_page = CrewAssignmentPage(
             self._get_flight_session()
@@ -625,10 +638,6 @@ class AdminWindow(QWidget):
         search_layout.addWidget(self.aircraft_search_input)
         toolbar.addWidget(search_container, 1)
 
-        # --------------------------------------------------------------
-        # Primary actions
-        # --------------------------------------------------------------
-
         self.aircraft_refresh_button = QPushButton("Refresh")
         self.aircraft_refresh_button.setObjectName("aircraftRefreshButton")
         self.aircraft_refresh_button.setCursor(Qt.CursorShape.PointingHandCursor)
@@ -652,19 +661,11 @@ class AdminWindow(QWidget):
         self.aircraft_delete_button.setEnabled(False)
         toolbar.addWidget(self.aircraft_delete_button)
 
-        # --------------------------------------------------------------
-        # View Seats button
-        # --------------------------------------------------------------
-
         self.view_seats_button = QPushButton("View Seats")
         self.view_seats_button.setObjectName("aircraftViewSeatsButton")
         self.view_seats_button.setCursor(Qt.CursorShape.PointingHandCursor)
         self.view_seats_button.setEnabled(False)
         toolbar.addWidget(self.view_seats_button)
-
-        # --------------------------------------------------------------
-        # Status buttons
-        # --------------------------------------------------------------
 
         self.aircraft_activate_button = QPushButton("Set Active")
         self.aircraft_activate_button.setObjectName("aircraftActivateButton")
@@ -683,10 +684,6 @@ class AdminWindow(QWidget):
         self.aircraft_inactive_button.setCursor(Qt.CursorShape.PointingHandCursor)
         self.aircraft_inactive_button.setEnabled(False)
         toolbar.addWidget(self.aircraft_inactive_button)
-
-        # --------------------------------------------------------------
-        # Signal connections
-        # --------------------------------------------------------------
 
         self.aircraft_add_button.clicked.connect(self._open_add_aircraft_dialog)
         self.aircraft_edit_button.clicked.connect(self._open_edit_aircraft_dialog)
@@ -771,6 +768,11 @@ class AdminWindow(QWidget):
 
         if hasattr(page, "refresh_table"):
             page.refresh_table()
+
+    def _on_schedule_generated(self) -> None:
+        """Called after the schedule generator finishes. Refresh dependent pages."""
+        self._refresh_flights()
+        self._refresh_dashboard()
 
     def _set_aircraft_status(self, count: int, search_text: str) -> None:
         normalized = search_text.strip()
@@ -1057,7 +1059,7 @@ class AdminWindow(QWidget):
                 ),
             )
 
-                # ==================================================================
+    # ==================================================================
     # Passenger management
     # ==================================================================
 
@@ -1822,6 +1824,7 @@ class AdminWindow(QWidget):
             "aircraft": ("Aircraft", "Manage airline aircraft"),
             "routes": ("Routes", "Manage flight routes"),
             "flights": ("Flights", "Create and manage flights"),
+            "schedule": ("Schedule Generator", "Bulk-generate flights with ML fares"),
             "crew_assignment": ("Crew Assignment", "Assign crew to flights"),
             "staff": ("Staff", "Manage airline staff"),
             "bookings": ("Bookings", "View passenger bookings"),
@@ -2165,6 +2168,6 @@ class AdminWindow(QWidget):
         if getattr(self, "route_session", None) is not None:
             self.route_session.close()
             self.route_session = None
-            self.route_service = None    
+            self.route_service = None
 
         super().closeEvent(event)
