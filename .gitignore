@@ -95,3 +95,14 @@ _diag*.txt
 .DS_Store
 Thumbs.db
 ._*
+
+# ============================================================
+#  Machine Learning
+# ============================================================
+app/ml/models/*.pkl
+!app/ml/models/.gitkeep
+data/
+*.csv
+!data/samples/*.csv
+app/ml/**/__pycache__/
+.ipynb_checkpoints/
