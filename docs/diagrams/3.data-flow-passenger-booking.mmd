@@ -4,6 +4,7 @@ sequenceDiagram
     participant R as React App
     participant F as FastAPI
     participant S as BookingService
+    participant P as PricingService
     participant Repo as Repositories
     participant DB as PostgreSQL
 
@@ -15,6 +16,7 @@ sequenceDiagram
     Repo->>DB: SELECT * FROM seats WHERE aircraft_id = ?
     DB-->>Repo: rows
     Repo-->>S: Seat objects
+    Note over S,P: Each seat's price<br/>uses class multiplier<br/>(Economy 1× / Business 2.5×)
     S-->>F: seats + availability + prices
     F-->>R: JSON response
     R-->>U: Show seat map
@@ -25,6 +27,7 @@ sequenceDiagram
     S->>Repo: validate passenger, flight, seat
     S->>Repo: check seat availability
     S->>Repo: create booking (status=UNPAID)
+    Note over S: fare_amount comes from<br/>flight.base_fare (already<br/>ML-priced at generation)
     Repo->>DB: INSERT INTO bookings ...
     DB-->>Repo: booking id
     Repo-->>S: Booking object

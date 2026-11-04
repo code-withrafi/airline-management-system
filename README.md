@@ -1,6 +1,6 @@
 # ✈️ Airline Management System
 
-> **Final Year Project · Zhengzhou University · 2023–2027**
+> **Zhengzhou University · 2023–2027**
 > A modern airline booking and management system built on a **hybrid desktop + web architecture**.
 
 ---
@@ -50,17 +50,25 @@ The system consists of **two complementary user interfaces** sharing a common Po
 
 - 📊 Admin dashboard with live metrics
 - ✈️ Aircraft, flight, route, and airport management
+- 🤖 Automated flight schedule generator (bulk-generate flights with ML-driven fares)
 - 👥 Staff management and assignment
 - ✅ Passenger check-in and boarding pass issuance
 - 💰 Refund approval / rejection
 - 📈 Reports and analytics
 
-### 2.3 Backend (shared)
+### 2.3 Machine Learning Enhancements
+
+- 🎯 **No-Show Prediction** — XGBoost classifier for the Overbooking Advisor panel (ROC-AUC 0.81)
+- 💡 **Route Recommendations** — item-item collaborative filtering for personalized route suggestions
+- 💰 **Dynamic Fare Prediction** — XGBoost regressor pricing each flight by demand patterns (R² = 0.98)
+
+### 2.4 Backend (shared)
 
 - 🔐 JWT authentication with role-based access
 - 📐 Role-gated API (passenger-only web endpoints)
 - 🎯 Class-based pricing engine (Economy 1× / Business 2.5×)
 - 🪑 Automatic seat generation for any aircraft capacity
+- 🛫 Aircraft range-aware scheduling (ATR turboprops blocked from routes > 600 km)
 - 📄 PDF generation (tickets, boarding passes, baggage tags)
 - 🔄 Full booking lifecycle state machine
 
@@ -109,6 +117,7 @@ See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) for full diagrams.
 | **Database** | PostgreSQL 14+ |
 | **Auth** | JWT (HS256) + bcrypt |
 | **PDFs** | ReportLab |
+| **Machine Learning** | XGBoost, scikit-learn, pandas, numpy, joblib |
 | **Icons** | react-icons |
 
 ---
@@ -131,15 +140,23 @@ pip install -r requirements.txt
 # 3. Initialize the database (creates tables + seed data)
 python -c "from app.models.init_database import init_database; init_database()"
 
-# 4. Start the FastAPI backend
+# 4. Train the ML models (one-time setup)
+python -m app.ml.no_show.generate_data
+python -m app.ml.no_show.train
+python -m app.ml.recommender.prepare_data
+python -m app.ml.recommender.train
+python -m app.ml.fare.generate_data
+python -m app.ml.fare.train
+
+# 5. Start the FastAPI backend
 python -m uvicorn api.main:app --reload --host 127.0.0.1 --port 8000
 
-# 5. Set up and start the React frontend (in a new terminal)
+# 6. Set up and start the React frontend (in a new terminal)
 cd frontend
 npm install
 npm run dev
 
-# 6. Launch the desktop app (in a third terminal)
+# 7. Launch the desktop app (in a third terminal)
 python -m app.main
 ```
 
@@ -165,6 +182,7 @@ Full setup guide: [docs/SETUP.md](docs/SETUP.md)
 | [USER_GUIDE.md](docs/USER_GUIDE.md) | Step-by-step guides for all user roles |
 | [TESTING.md](docs/TESTING.md) | Test strategy, test cases, results |
 | [SETUP.md](docs/SETUP.md) | Installation, configuration, deployment |
+| [ML_FEATURES.md](docs/ML_FEATURES.md) | Machine learning features documentation |
 | [SUMMARY.md](docs/SUMMARY.md) | One-page executive summary |
 
 ---
@@ -181,9 +199,15 @@ Airline-Management-System/
 │   │   ├── login/          # Shared login window
 │   │   ├── common/         # Styles, shared widgets
 │   │   └── components/     # Reusable PySide widgets
+│   ├── ml/                 # Machine learning modules
+│   │   ├── no_show/        # No-show prediction (XGBoost classifier)
+│   │   ├── recommender/    # Route recommendations (collaborative filtering)
+│   │   ├── fare/           # Dynamic fare prediction (XGBoost regressor)
+│   │   └── models/         # Saved .pkl model artifacts
 │   ├── models/             # SQLAlchemy models
 │   ├── repositories/       # Data access layer
 │   ├── services/           # Business logic
+│   │   └── schedule/       # Flight schedule generator services
 │   ├── utils/              # PDF generator, security helpers
 │   └── validators/         # Domain validators
 ├── api/                    # FastAPI passenger API
@@ -200,7 +224,8 @@ Airline-Management-System/
 │   │   ├── pages/          # Route pages
 │   │   └── App.jsx
 │   └── package.json
-├── docs/                   # Documentation (this folder)
+├── docs/                   # Documentation
+├── scripts/                # Utility scripts (data gen, verification)
 ├── tests/                  # Automated tests
 ├── requirements.txt
 └── README.md
@@ -227,7 +252,7 @@ See [docs/TESTING.md](docs/TESTING.md) for the full test plan.
 
 | Role | Surface | Capabilities |
 |---|---|---|
-| **Admin** | Desktop | Full CRUD on aircraft, flights, routes, staff, airports; reports; refund approvals |
+| **Admin** | Desktop | Full CRUD on aircraft, flights, routes, staff, airports; schedule generation; reports; refund approvals |
 | **Staff** | Desktop | Passenger check-in, boarding pass issuance, baggage handling |
 | **Passenger** | Web | Search, book, pay, download tickets, request refunds, manage profile |
 
@@ -243,14 +268,14 @@ A complete visual walkthrough of the system, organized by user journey.
 
 ### 10.1 Passenger Web Application
 
-####  Landing & Public Pages
+#### 🏠 Landing & Public Pages
 
 | # | Screenshot | Description |
 |---|---|---|
 | 1 | ![Landing Page](./snaps/landing.png) | **Landing page** — Animated hero section with the flight search widget |
 | 10 | ![Popular Destinations](./snaps/10populardestinationsection.png) | **Popular destinations** — Featured routes section on the landing page |
 
-####  Flight Search & Discovery
+#### 🔍 Flight Search & Discovery
 
 | # | Screenshot | Description |
 |---|---|---|
@@ -265,33 +290,33 @@ A complete visual walkthrough of the system, organized by user journey.
 | 5 | ![Mock Payment](./snaps/5mockpayment.png) | **Mock payment** — Secure card form with live order summary |
 | 6 | ![Confirmation](./snaps/6confirmation.png) | **Confirmation** — Animated success screen with booking reference |
 
-####  Booking Management
+#### 📋 Booking Management
 
 | # | Screenshot | Description |
 |---|---|---|
 | 7 | ![Booking Details](./snaps/7bookingdetails.png) | **Booking details** — E-ticket view with full timeline and actions |
 | 8 | ![E-Ticket](./snaps/8eticket.png) | **E-ticket PDF** — Generated ticket with passenger and flight details |
 
-####  Account Management
+#### 👤 Account Management
 
 | # | Screenshot | Description |
 |---|---|---|
 | 9 | ![Profile](./snaps/9profile.png) | **Profile page** — Personal information and password management |
 | 1.1 | ![Register](./snaps/1.1Register.png) | **Register** — Account creation form with validation |
-| 1.1 | ![Login](./snaps/1.1Login.png) | **Login** — Sign-in form with error handling |
+| 1.2 | ![Login](./snaps/1.2Login.png) | **Login** — Sign-in form with error handling |
 
 ---
 
 ### 10.2 Admin Desktop Application
 
-####  Dashboard
+#### 📊 Dashboard
 
 | # | Screenshot | Description |
 |---|---|---|
 | stafflogin | ![Staff Login](./snaps/stafflogin.png) | **Login** — Shared login window for admin and staff |
 | 11 | ![Admin Dashboard](./snaps/11admindashboard.png) | **Admin dashboard** — Live metrics for flights, aircraft, and bookings |
 
-####  Management Screens
+#### ⚙️ Management Screens
 
 | # | Screenshot | Description |
 |---|---|---|
@@ -299,7 +324,7 @@ A complete visual walkthrough of the system, organized by user journey.
 | 13 | ![Add Aircraft](./snaps/13admindashaircraftsadd.png) | **Add aircraft** — Aircraft registration with auto seat generation |
 | 14 | ![Add Flight](./snaps/14admindashflightadd.png) | **Add flight** — Flight scheduling with route and aircraft selection |
 
-####  Operations & Reports
+#### 📈 Operations & Reports
 
 | # | Screenshot | Description |
 |---|---|---|
@@ -310,7 +335,7 @@ A complete visual walkthrough of the system, organized by user journey.
 
 ### 10.3 Staff Desktop Application
 
-####  Check-In Operations
+#### ✅ Check-In Operations
 
 | # | Screenshot | Description |
 |---|---|---|
@@ -328,7 +353,7 @@ Academic use only. **Not licensed for commercial distribution.**
 
 ## 12. Acknowledgments
 
-Built as part of a personal Project.
+Built as part of a personal Final Year Project.
 
 - **Institution:** Zhengzhou University
 - **Academic Year:** 2023–2027

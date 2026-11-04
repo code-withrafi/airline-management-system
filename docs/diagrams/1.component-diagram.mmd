@@ -9,16 +9,24 @@ flowchart TB
         direction TB
         FastAPI["FastAPI<br/>(REST API)"]
         Services["Service Layer<br/>(Business Logic)"]
+        Schedule["Schedule Generator<br/>(Automated Flight Creation)"]
+        ML["ML Subsystem<br/>(No-Show · Recommender · Fare)"]
         Repos["Repository Layer<br/>(Data Access)"]
     end
 
     subgraph Data["Data Layer"]
         PG[("PostgreSQL<br/>Database")]
+        Models[("Trained ML Models<br/>(*.pkl artifacts)")]
     end
 
     Desktop -->|SQLAlchemy ORM| Services
+    Desktop -->|direct import| Schedule
+    Desktop -->|direct import| ML
     Web -->|"REST / JWT"| FastAPI
     FastAPI --> Services
+    FastAPI --> ML
+    Schedule --> ML
     Services --> Repos
     Repos --> PG
+    ML -.->|loads| Models
     Desktop -.->|"also via ORM"| PG

@@ -1,6 +1,6 @@
-#  User Guide
+# 👥 User Guide
 
-> **Airline Management System**
+> **Airline Management System — Final Year Project**
 > Complete guide for Passengers, Administrators, and Staff.
 
 ---
@@ -48,7 +48,17 @@
    - **Economy from $X · Business from $Y**
 4. Click **Select** on a flight to see full details.
 
-### 1.3 Booking a Flight
+### 1.3 Exploring Recommendations (Automatic)
+
+Below the popular-destinations section, the landing page shows a **live recommendation carousel**:
+
+- **Anonymous visitors** see the 3 most popular routes across the network.
+- **Logged-in passengers** see **personalized** recommendations based on their booking history.
+  - The section header changes to *"Picked for your next trip"*
+  - A subtitle shows which of your past routes the recommendations are based on.
+- Click any recommended route to jump straight to the search results for that route.
+
+### 1.4 Booking a Flight
 
 1. On the flight detail page, click **Book this flight**.
 2. *(If not logged in, you'll be redirected to login; after signing in, you'll return to booking automatically.)*
@@ -63,7 +73,9 @@
    - Total
 5. Click **Continue to payment**.
 
-### 1.4 Completing Payment
+> **Dynamic pricing note:** Fares are computed per flight by the ML fare model. Same route, different days/hours have different prices. Peak hours, weekends, and holiday seasons cost more.
+
+### 1.5 Completing Payment
 
 The demo uses a **mock payment gateway**. Any card number passing the Luhn check will be approved.
 
@@ -76,7 +88,7 @@ The demo uses a **mock payment gateway**. Any card number passing the Luhn check
 
 Click **Pay $X.XX**. You'll be redirected to a **green confirmation screen**.
 
-### 1.5 Downloading Your Ticket
+### 1.6 Downloading Your Ticket
 
 **From the confirmation screen:** Click **Download ticket**.
 
@@ -89,7 +101,7 @@ You'll get a PDF e-ticket with:
 - Seat assignment
 - Fare
 
-### 1.6 Managing Bookings
+### 1.7 Managing Bookings
 
 Go to **My Bookings** from the navbar. Each booking shows:
 
@@ -100,7 +112,7 @@ Go to **My Bookings** from the navbar. Each booking shows:
 
 Click **Details** for the full booking page with timeline.
 
-### 1.7 Requesting a Refund
+### 1.8 Requesting a Refund
 
 1. On a **CONFIRMED** booking, click **Refund**.
 2. A modal opens showing:
@@ -110,7 +122,7 @@ Click **Details** for the full booking page with timeline.
 4. Status changes to **REFUND_REQUESTED** (pending admin review).
 5. Once an admin approves, status becomes **REFUNDED**.
 
-### 1.8 Profile Management
+### 1.9 Profile Management
 
 Click your **avatar** (top-right) → **Profile**:
 
@@ -119,7 +131,7 @@ Click your **avatar** (top-right) → **Profile**:
 
 Changes are saved immediately.
 
-### 1.9 Signing Out
+### 1.10 Signing Out
 
 Click **Sign out** in the top-right. Your JWT is cleared. You can sign back in anytime.
 
@@ -133,16 +145,19 @@ Click **Sign out** in the top-right. Your JWT is cleared. You can sign back in a
 
 Shows:
 
-- Total flights today
-- Active aircraft
-- Bookings count
-- Revenue
+- Total airports, aircraft, routes, and flights
+- Scheduled vs. cancelled flights
+- Bookings and registered passengers
+- Recent / upcoming flights list
 
 ### 2.2 Aircraft Management
 
-- **Add aircraft:** Registration, manufacturer, model, capacity → seats auto-generate
+- **Add aircraft:** Registration, manufacturer, model, capacity → seats **auto-generate** to match
 - **Edit aircraft:** Update details (capacity changes require care with existing bookings)
 - **View seats:** Inspect the layout generated for each aircraft
+- **Status:** Set aircraft to ACTIVE / MAINTENANCE / INACTIVE
+
+> **Aircraft range rule:** ATR turboprops cannot be assigned to routes longer than 600 km. Only Boeing and Airbus (and other long-haul manufacturers) can operate on long routes. This rule is enforced automatically by the schedule generator.
 
 ### 2.3 Route Management
 
@@ -156,19 +171,85 @@ Shows:
 - **Cancel flight:** All bookings auto-refund eligible
 - **Assign aircraft:** Swap aircraft on an existing flight
 
-### 2.5 Staff Management
+#### Filtering Flights (Large Fleets)
+
+Because the schedule generator can produce **hundreds or thousands of flights**, the flight management page includes powerful filters:
+
+| Filter | Purpose |
+|---|---|
+| **Search** | Match by flight number (`SN1042`), route (`DAC-CXB`, `DAC->CXB`, `DAC`), or boarding gate |
+| **Status** | Show only flights matching one status (Scheduled, Boarding, Departed, etc.) |
+| **From date** | Only flights departing on or after this date |
+| **To date** | Only flights departing on or before this date |
+| **Reset** | Clear all filters and restore the default date range |
+
+The status bar at the bottom shows `Showing X of Y flight(s).` when filters are active.
+
+### 2.5 Schedule Generator (Automated Flight Creation)
+
+**Access:** Click **🤖 Schedule** in the sidebar.
+
+This is the flagship automation feature. It bulk-generates flights for an entire date range in seconds.
+
+#### How to Use
+
+1. **Pick a date range:**
+   - **Start date** — when the schedule begins
+   - **End date** — when it ends (up to 6+ months is fine)
+   - Use the **preset buttons** for quick ranges: *1 month · 3 months · 6 months · 1 year*
+2. **Choose options:**
+   - ☐ **Overwrite existing flights in range** — deletes SCHEDULED flights before regenerating. Flights with **active bookings** are always preserved.
+3. **Click Generate Flights.**
+4. Watch the **progress bar** and **live log** as flights are created.
+5. When done, a summary dialog shows **created**, **skipped**, and **duration**.
+
+#### What Gets Generated
+
+| Rule | Value |
+|---|---|
+| **Domestic routes** | 3 flights per day |
+| **International routes** | 1 flight per day, 2 on weekends |
+| **Aircraft assignment** | Round-trip aware, range-aware |
+| **Turnaround time** | 45 min domestic / 90 min international |
+| **Fares** | Dynamically computed per flight via ML |
+| **Flight numbers** | Auto-generated unique sequential numbers |
+
+#### Performance
+
+- **~1,140 flights per second** on this hardware
+- A 30-day schedule for ~12 routes completes in **under 1 second**
+- Progress bar updates live; UI stays responsive during generation
+
+#### Post-Generation
+
+After completion, the flights page and dashboard refresh automatically. Use the **flight filters** (§2.4) to inspect specific days or routes.
+
+### 2.6 Staff Management
 
 - **Add staff account:** Creates a `User` + `Staff` row
 - **Assign to flights:** Pilots, cabin crew, check-in officers
 
-### 2.6 Refund Approvals
+### 2.7 Refund Approvals
 
 For each booking in `REFUND_REQUESTED`:
 
 - **Approve** → status flips to `REFUNDED`, `refund_amount` is set
 - **Reject** → status reverts to `CONFIRMED`
 
-### 2.7 Reports
+### 2.8 Overbooking Advisor (ML)
+
+When a flight is selected on the **Flights** page, a panel below the table shows:
+
+- **Confirmed bookings** on the flight
+- **Expected no-shows** (ML prediction)
+- **Expected no-show rate**
+- **Safe overbooking** count
+- **Confidence** (low / medium / high)
+- A **recommendation message**
+
+This uses the trained no-show prediction model. Values refresh when you click **Refresh** or select a different flight.
+
+### 2.9 Reports
 
 - Bookings by route
 - Revenue by aircraft
@@ -246,6 +327,25 @@ Currently the system handles **one passenger per booking**. For family travel:
 - Log in → **My Bookings** → reference shown on each row
 - Or check confirmation email (demo — not really sent)
 
+### 4.5 Same Route, Different Price
+
+You may notice that two flights on the **same route** on **different days** have **different prices**. This is expected:
+
+- Peak hours (7–9 AM, 5–7 PM) cost more
+- Weekends cost more
+- Holiday seasons (Dec, Jan, Jun, Jul) cost more
+- Last-minute bookings cost more than long-lead bookings
+
+The ML fare model prices each flight individually. This is how real airlines operate.
+
+### 4.6 Passenger Logs Into the Desktop App
+
+If you log in via the **PySide desktop app** with a passenger account:
+
+- A friendly message appears explaining that passengers should use the web app.
+- The web app URL opens automatically in your browser.
+- The desktop login window returns so admins or staff can still sign in.
+
 ---
 
 ## 5. Keyboard Shortcuts
@@ -284,6 +384,11 @@ The web app works on:
 | Payment fails | Check card number (Luhn valid), expiry is future |
 | PDF doesn't download | Check popup blocker; try a different browser |
 | Refund request fails | Booking must be `CONFIRMED`, not yet departed |
+| Recommendations don't load | Ensure the recommender model is trained: `python -m app.ml.recommender.train` |
+| Overbooking Advisor shows "model not trained" | Run `python -m app.ml.no_show.train` |
+| Same fares on all flights | ML fare model missing — run `python -m app.ml.fare.generate_data` then `python -m app.ml.fare.train`, then regenerate flights |
+| Flight page too slow | Use the filter toolbar (search / status / date range) to narrow the result set |
+| ATR aircraft on long routes (legacy) | Run `python -m scripts.purge_future_flights` then regenerate |
 
 ---
 
@@ -292,3 +397,5 @@ The web app works on:
 - Check the API docs at <http://127.0.0.1:8000/docs>
 - Inspect browser DevTools → Network tab for API calls
 - Check backend logs in the uvicorn terminal
+- Read the ML documentation at `docs/ML_FEATURES.md`
+- Read the setup guide at `docs/SETUP.md` for installation issues

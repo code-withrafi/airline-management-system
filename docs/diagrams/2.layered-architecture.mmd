@@ -6,7 +6,14 @@ flowchart TB
 
     subgraph App["Application Layer"]
         B1["Services<br/>app/services/*"]
-        B2["Validators<br/>app/validators/*"]
+        B2["Schedule Generator<br/>app/services/schedule/*"]
+        B3["Validators<br/>app/validators/*"]
+    end
+
+    subgraph ML["ML Subsystem"]
+        M1["No-Show Service<br/>app/ml/no_show/*"]
+        M2["Recommender Service<br/>app/ml/recommender/*"]
+        M3["Fare Service<br/>app/ml/fare/*"]
     end
 
     subgraph Data["Data Layer"]
@@ -16,11 +23,25 @@ flowchart TB
 
     subgraph Storage["Storage"]
         D1[("PostgreSQL")]
+        D2[("Trained Models<br/>app/ml/models/*.pkl")]
     end
 
     A1 --> B1
+    A1 --> B2
+    A1 --> M1
+    A1 --> M2
     A2 --> B1
-    B1 --> B2
+    A2 --> M1
+    A2 --> M2
+    B1 --> B3
     B1 --> C1
+    B2 --> M3
+    B2 --> C1
+    M1 --> C1
+    M2 --> C1
+    M3 --> C1
+    M1 -.->|loads| D2
+    M2 -.->|loads| D2
+    M3 -.->|loads| D2
     C1 --> C2
     C2 --> D1

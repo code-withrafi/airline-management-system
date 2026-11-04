@@ -8,6 +8,7 @@ flowchart LR
         CDN["Static CDN<br/>(Vercel)"]
         API["FastAPI<br/>(Railway / Fly)"]
         DBS[("Managed PostgreSQL<br/>(Neon / RDS)")]
+        Models[("ML Model Artifacts<br/>(Object Storage)")]
     end
 
     U1 -->|HTTPS| CDN
@@ -15,4 +16,6 @@ flowchart LR
     U2 -->|SSH / VPN| Desktop["Desktop App<br/>(internal)"]
     CDN -->|API calls| API
     API --> DBS
+    API -.->|loads models| Models
     Desktop -->|Direct SQL| DBS
+    Desktop -.->|loads models| Models
